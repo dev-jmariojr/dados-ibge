@@ -1,0 +1,20 @@
+server:
+  port: 8080
+spring:
+  data:
+    mongodb:
+      uri: mongodb://user_mongo:pass_mongo@localhost:27017/testeMongoDB?authSource=admin
+  api:
+    ibge:
+      url: https://servicodados.ibge.gov.br/api/v1/localidades
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: user_rabbit
+    password: pass_rabbit
+exchange:
+  name: exchange.ibge
+routingkey:
+  regions: import.regions
+  states: import.states
+  cities: import.cities

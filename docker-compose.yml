@@ -1,0 +1,28 @@
+version: '3.1'
+services:
+  app:
+    container_name: ibge_app
+    image: img_dados_ibge
+    build: ./
+    ports:
+      - "8080:8080"
+    depends_on:
+      - queue
+    network_mode: "host"
+  db:
+    container_name: ibge_mongo
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user_mongo
+      MONGO_INITDB_ROOT_PASSWORD: pass_mongo
+  queue:
+    image: rabbitmq:3-management
+    container_name: ibge_rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user_rabbit
+      - RABBITMQ_DEFAULT_PASS=pass_rabbit
