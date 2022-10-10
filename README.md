@@ -4,7 +4,8 @@ Data importer application from IBGE API (regions, states and cities of the Brazi
 
 # skills:
 
-- Rest API Java 11(Spring boot)
+- Java 11 (Spring boot)
+- Rest API
 - MongoDB
 - RabbitMQ
 - Docker
