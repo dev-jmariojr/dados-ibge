@@ -1,4 +1,4 @@
-# dados-ibge
+# API Dados do IBGE
 Aplicação que importa dados da API do IBGE (https://servicodados.ibge.gov.br/api/docs/localidades) e os armazena em um banco de dados NoSQL (MongoDB).
 
 
@@ -7,20 +7,20 @@ Aplicação que importa dados da API do IBGE (https://servicodados.ibge.gov.br/a
 - Cidades
 
 
-# Ferramentas/ Tecnologias utilizadas:
+# Ferramentas/ Tecnologias utilizadas
 
 - Java 17 (Spring boot)
 - Rest API
 - Feign Client
-- MongoDB
+- Banco de dados NoSQL (MongoDB)
 - RabbitMQ
 - Docker
 - JUnit
 - Mockito
 
-# Executando localmente
+# Executando a aplicação
 
 - mvn clean package
-- docker-compose up -d
-
+- docker compose build
+- docker compose up -d
 
