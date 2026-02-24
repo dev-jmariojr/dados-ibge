@@ -1,21 +1,45 @@
 package br.com.jj.dadosibge.service;
 
+import br.com.jj.dadosibge.dto.CityParams;
 import br.com.jj.dadosibge.model.City;
+import br.com.jj.dadosibge.repository.CityRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
-public interface CityService {
+@Service
+@AllArgsConstructor
+public class CityService {
 
-    public void deleteAll();
-    public List<City> findAll();
+    private final CityRepository repository;
 
-    public List<City> findItemsByState(String value);
+    public List<City> find(CityParams params) {
+        if(params == null || params.isEmpty())
+            return repository.findAll();
 
-    public City findByCode(String value);
+        if(params.id()!= null && params.id() >0) {
+            return repository.findItemById(params.id())
+                    .map(Collections::singletonList)
+                    .orElse(Collections.emptyList());
+        }
+        else if (params.state()!= null && !params.state().isEmpty()) {
+            return repository.findItemsByState(params.state());
+        }
+        else
+            return repository.findItemByName(String.format("^%s", params.name()));
+    }
 
-    public City findById(Integer value);
+    public City save(City value) {
+        value.setShortNameState(value.getState().getShortName());
+        value.setDt(LocalDateTime.now());
+        return repository.save(value);
+    }
 
-    public List<City> findByName(String value);
+    public void deleteAll() {
+        repository.deleteAll();
+    }
 
-    public City save(City value);
 }

@@ -8,25 +8,21 @@ import br.com.jj.dadosibge.service.StateService;
 import br.com.jj.dadosibge.utils.DateTimeDeserializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
+@Slf4j
 @Component
+@AllArgsConstructor
 public class RabbitMQListener {
-
-    @Value("${routingkey.states}")
-    private String routingKeyStates;
-
-    @Value("${routingkey.cities}")
-    private String routingKeyCities;
 
     private static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new DateTimeDeserializer())
@@ -37,21 +33,11 @@ public class RabbitMQListener {
     private final StateService stateService;
     private final CityService cityService;
 
-    private final RabbitMQProducer producer;
-
-    public RabbitMQListener(ImportService importService, RegionService regionService, StateService stateService, CityService cityService, RabbitMQProducer producer) {
-        this.importService = importService;
-        this.regionService = regionService;
-        this.stateService = stateService;
-        this.cityService = cityService;
-        this.producer = producer;
-    }
-
-    protected String readMessageBody(Message message) throws UnsupportedEncodingException{
+    protected String readMessageBody(Message message) {
         return new String(message.getBody(), StandardCharsets.UTF_8);
     }
 
-    protected <T> T convertMessage(Object msg, Class<T> tClass) throws UnsupportedEncodingException {
+    protected <T> T convertMessage(Object msg, Class<T> tClass) {
         Message message = (Message) msg;
         String body = readMessageBody(message);
         String bodyDecode = new String(Base64.getDecoder().decode(body), StandardCharsets.UTF_8);
@@ -59,63 +45,69 @@ public class RabbitMQListener {
     }
 
     @RabbitListener(queues = {"regions"})
-    public void receiveRegions(Message message) throws UnsupportedEncodingException {
-        String routingKey = message.getMessageProperties().getReceivedRoutingKey().toUpperCase();
-        System.out.println(routingKey);
+    public void receiveRegions(Message message) throws InterruptedException {
+        Thread.sleep(1500);
+        log.info("importar regioes");
 
-        ImportIBGE importIBGE = this.convertMessage(message, ImportIBGE.class);
-        if(importIBGE.getActive().equals(ImportIBGEActive.IMPORTANDO.getId()))
-        {
-            cityService.deleteAll();
-            stateService.deleteAll();
-            regionService.deleteAll();
-            List<Region> list = this.importService.regionList();
-            if(list!=null){
-                for (int i = 0; i < list.size(); i++) {
-                    Region region = regionService.save(list.get(i));
-                    producer.publish(RabbitMQProducer.message(region), routingKeyStates);
-                }
-            }
+        cityService.deleteAll();
+        stateService.deleteAll();
+        regionService.deleteAll();
+
+        List<Region> regions = importService.regionList();
+        for (Region region: regions) {
+            Region regionSaved = regionService.save(region);
+            log.info("regiao={}", regionSaved.getName());
+
+            importService.producerMessage(regionSaved);
         }
+
     }
 
     @RabbitListener(queues = {"states"})
-    public void receiveStates(Message message) throws UnsupportedEncodingException {
-        String routingKey = message.getMessageProperties().getReceivedRoutingKey().toUpperCase();
-        System.out.println(routingKey);
-
+    public void receiveStates(Message message) throws InterruptedException {
+        Thread.sleep(1500);
+        log.info("importar estados");
         Region region = this.convertMessage(message, Region.class);
-        if(region!=null)
-        {
-            List<State> list = this.importService.stateList(region);
-            if(list!=null){
-                region.setCountStates(list.size());
-                regionService.save(region);
-                for (int i = 0; i < list.size(); i++) {
-                    State state = stateService.save(list.get(i));
-                    producer.publish(RabbitMQProducer.message(state), routingKeyCities);
-                }
-            }
+        if(region == null)
+            return;
+
+        List<State> states = this.importService.stateList(region);
+        if(states.isEmpty())
+            return;
+
+        for (var state: states) {
+            state.setRegion(region);
+            state.setShortNameRegion(region.getShortName());
+            State stateSaved = stateService.save(state);
+            log.info("uf={} regiao={}", stateSaved.getShortName(), region.getName());
+
+            importService.producerMessage(stateSaved);
         }
+
+        region.setCountStates(states.size());
+        regionService.save(region);
     }
 
     @RabbitListener(queues = {"cities"})
-    public void receiveCities(Message message) throws UnsupportedEncodingException {
-        String routingKey = message.getMessageProperties().getReceivedRoutingKey().toUpperCase();
-        System.out.println(routingKey);
+    public void receiveCities(Message message) throws InterruptedException {
+        Thread.sleep(1500);
+        log.info("importar cidades");
+        State state = convertMessage(message, State.class);
+        if(state == null)
+            return;
 
-        State state = this.convertMessage(message, State.class);
-        if(state!=null)
-        {
-            List<City> list = this.importService.cityList(state);
-            if(list!=null){
-                state.setCountCities(list.size());
-                stateService.save(state);
-                for (int i = 0; i < list.size(); i++) {
-                    City city = cityService.save(list.get(i));
-                    System.out.println(city.getName());
-                }
-            }
+        List<City> cities = importService.cityList(state);
+        if(cities.isEmpty())
+            return;
+
+        for (var city: cities) {
+            city.setState(state);
+            city.setShortNameState(state.getShortName());
+            City citySaved = cityService.save(city);
+            log.info("cidade={} uf={}", citySaved.getName(), state.getShortName());
         }
+
+        state.setCountCities(cities.size());
+        stateService.save(state);
     }
 }
