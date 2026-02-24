@@ -1,21 +1,26 @@
 # dados-ibge
-Data importer application from IBGE API (regions, states and cities of the Brazil)
+Aplicação que importa dados da API do IBGE (https://servicodados.ibge.gov.br/api/docs/localidades) e os armazena em um banco de dados NoSQL (MongoDB).
 
 
-# skills:
+- Regiões
+- Estados
+- Cidades
 
-- Java 11 (Spring boot)
+
+# Ferramentas/ Tecnologias utilizadas:
+
+- Java 17 (Spring boot)
 - Rest API
+- Feign Client
 - MongoDB
 - RabbitMQ
 - Docker
+- JUnit
+- Mockito
 
-# running application
+# Executando localmente
 
-- mvn clean
-
-- mvn install -DskipTests
-
+- mvn clean package
 - docker-compose up -d
 
 

@@ -5,13 +5,14 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RegionRepository extends MongoRepository<Region, String> {
 
     @Query("{id:?0}")
-    Region findItemById(Integer id);
+    Optional<Region> findItemById(Integer id);
 
     @Query("{shortName:'?0'}")
-    Region findItemByShortName(String shortName);
+    Optional<Region> findItemByShortName(String shortName);
 
 }

@@ -2,20 +2,14 @@ version: '3.1'
 services:
   app:
     container_name: ibge_app
-    image: img_dados_ibge
-    build: ./
+    image: eclipse-temurin:17-jre-alpine
+    restart: always
     ports:
-      - "8080:8080"
+      - "8090:8090"
     depends_on:
       - queue
+      - db
     network_mode: "host"
-  db:
-    container_name: ibge_mongo
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: user_mongo
-      MONGO_INITDB_ROOT_PASSWORD: pass_mongo
   queue:
     image: rabbitmq:3-management
     container_name: ibge_rabbitmq
@@ -26,3 +20,12 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=user_rabbit
       - RABBITMQ_DEFAULT_PASS=pass_rabbit
+    network_mode: "host"
+  db:
+    container_name: ibge_mongo
+    image: mongo:6
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user_mongo
+      MONGO_INITDB_ROOT_PASSWORD: pass_mongo
+    network_mode: "host"

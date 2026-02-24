@@ -1,23 +1,64 @@
 package br.com.jj.dadosibge.service;
 
+import br.com.jj.dadosibge.dto.RegionParams;
 import br.com.jj.dadosibge.model.Region;
+import br.com.jj.dadosibge.repository.RegionRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
-public interface RegionService {
+@Service
+@AllArgsConstructor
+public class RegionService {
 
-    public Region findById(Integer value);
+    private final RegionRepository repository;
 
-    public Region findByShortName(String value);
+    public List<Region> find(RegionParams params) {
+        if(params.isEmpty())
+            return repository.findAll();
 
-    public Region findByCode(String value);
+        if(params.id() > 0)
+            return repository.findItemById(params.id())
+                    .map(List::of)
+                    .orElse(Collections.emptyList());
+        else
+            return repository.findItemByShortName(params.shortName())
+                    .map(List::of)
+                    .orElse(Collections.emptyList());
+    }
 
-    public Region save(Region value);
+    public Region findByCode(String code) {
+        return repository.findById(code)
+                .orElseThrow(()->new IllegalArgumentException("Região não encontrada"));
+    }
 
-    public Boolean delete(Integer value);
+    public Region save(Region value) {
+        var optionalRegion = repository.findItemById(value.getId());
+        if(optionalRegion.isPresent()){
+            value.setCode(optionalRegion.get().getCode());
+        }
+        else{
+            value.setDt(LocalDateTime.now());
+            value.setCountStates(0);
+        }
 
-    public void deleteAll();
+        return repository.save(value);
+    }
 
-    public List<Region> findAll();
+    public Boolean delete(Integer value) {
+        var optionalRegion = repository.findItemById(value);
+        if(optionalRegion.isEmpty())
+            return false;
+
+        repository.deleteById(optionalRegion.get().getCode());
+        return true;
+    }
+
+    public void deleteAll() {
+        repository.deleteAll();
+    }
 
 }
